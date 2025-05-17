@@ -10,6 +10,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Google\Cloud\Vision\V1\ImageAnnotatorClient;
 use Google\Cloud\Core\ExponentialBackoff;
+use App\Models\Booking;
+use Illuminate\Support\Facades\Log;
+
 
 
 class ProductsManager extends Controller
@@ -20,6 +23,8 @@ class ProductsManager extends Controller
         $sort = request('sort'); // new
     
         $products = Products::where('is_approved', 1)
+            // Exclude products with the status 'sold'
+            ->where('stock_status', '!=', 'sold')
             ->when($category, function ($query, $category) {
                 return $query->where('category', $category);
             })
@@ -86,25 +91,46 @@ class ProductsManager extends Controller
             $slug = $originalSlug . '-' . $count++;
         }
     
-        // Upload to S3
-        try {
-            $file = $request->file('image');
+ 
+
+try {
+    // Get the file from the request
+    $file = $request->file('image');
     
-            if (!$file->isValid()) {
-                return back()->with('error', 'Uploaded file is not valid.');
-            }
+    // Log the file information for debugging
+    Log::info('File received for upload:', ['file' => $file]);
+
+    // Check if the file is valid
+    if (!$file->isValid()) {
+        Log::error('Uploaded file is not valid.');
+        return back()->with('error', 'Uploaded file is not valid.');
+    }
     
-            $fileKey = 'products/' . time() . '-' . $file->getClientOriginalName();
-            $uploaded = Storage::disk('s3')->put($fileKey, fopen($file->getPathname(), 'r+'));
+    // Generate a unique file key for S3
+    $fileKey = 'products/' . time() . '-' . $file->getClientOriginalName();
     
-            if (!$uploaded) {
-                return back()->with('error', 'Image upload to S3 failed at put().');
-            }
+    // Log the file key to ensure it's generated correctly
+    Log::info('Generated file key for upload:', ['fileKey' => $fileKey]);
+
+    // Try uploading the file to S3
+    $uploaded = Storage::disk('s3')->put($fileKey, fopen($file->getPathname(), 'r+'));
     
-            $imageUrl = 'https://' . config('filesystems.disks.s3.bucket') . '.s3.' . config('filesystems.disks.s3.region') . '.amazonaws.com/' . $fileKey;
-        } catch (\Exception $e) {
-            return back()->with('error', 'S3 Upload Exception: ' . $e->getMessage());
-        }
+    // Log the result of the upload attempt
+    if (!$uploaded) {
+        Log::error('Image upload to S3 failed at put().', ['fileKey' => $fileKey]);
+        return back()->with('error', 'Image upload to S3 failed at put().');
+    }
+    
+    // Log the successful upload and URL generation
+    $imageUrl = 'https://' . config('filesystems.disks.s3.bucket') . '.s3.' . config('filesystems.disks.s3.region') . '.amazonaws.com/' . $fileKey;
+    Log::info('File uploaded successfully to S3', ['imageUrl' => $imageUrl]);
+    
+} catch (\Exception $e) {
+    // Log any exceptions that occur during the upload process
+    Log::error('S3 Upload Exception:', ['exception' => $e->getMessage()]);
+    return back()->with('error', 'S3 Upload Exception: ' . $e->getMessage());
+}
+
     
         // Save product
         $product = new Products();
@@ -197,20 +223,59 @@ public function search(Request $request){
     return view('search', compact('products'));
 }
 
-public function markAsSold($id)
+public function storeBooking(Request $request, $productId)
 {
-    $product = Products::findOrFail($id);
+    // Fetch the product and ensure it exists
+    $product = Products::findOrFail($productId);
 
-    // Ensure only owner can mark as sold
-    if (Auth::user()->matricnum !== $product->matricnum) {
-        abort(403);
+    // Create the booking
+    $booking = new Booking();
+    $booking->product_id = $product->id;
+    $booking->buyer_matricnum = Auth::user()->matricnum;
+    $booking->seller_matricnum = $product->matricnum; // Seller's matricnum
+    $booking->status = 'pending'; // Default status is pending
+    $booking->save();
+
+    // Redirect with success message
+    return redirect()->route('profile.bookings')->with('success', 'Booking successfully created. Awaiting seller approval.');
+}
+
+
+public function approveBooking($bookingId)
+{
+    // Get the booking
+    $booking = Booking::findOrFail($bookingId);
+
+    // Ensure the user is the seller of the product
+    if ($booking->product->matricnum !== Auth::user()->matricnum) {
+        return back()->with('error', 'You are not the seller of this product.');
     }
 
+    // Change booking status to 'approved'
+    $booking->status = 'approved';
+    $booking->save();
+
+    return back()->with('success', 'Booking has been approved.');
+}
+
+public function markAsSold($productId)
+{
+    // Find the product by its ID
+    $product = Products::findOrFail($productId);
+
+    // Ensure that the current authenticated user is the seller of the product
+    if ($product->matricnum !== Auth::user()->matricnum) {
+        return back()->with('error', 'You are not the seller of this product.');
+    }
+
+    // Mark the product as sold
     $product->stock_status = 'sold';
     $product->save();
 
-    return back()->with('success', 'Product marked as sold.');
+    return back()->with('success', 'Product has been marked as sold.');
 }
+
+
 
 
 

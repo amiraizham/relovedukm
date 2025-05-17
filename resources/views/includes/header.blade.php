@@ -73,11 +73,23 @@
                 <span class="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500"></span>
             @endif
         </a>
+<a href="{{ route('notifications.index') }}" class="text-white hover:text-[#E95670] transition relative group">
+    <svg xmlns="http://www.w3.org/2000/svg"
+        class="h-6 w-6 text-white transition duration-300 group-hover:scale-110"
+        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+            d="M12 22c1.104 0 2-.896 2-2H10c0 1.104.896 2 2 2zm6-4V9c0-3.313-2.687-6-6-6s-6 2.687-6 6v9l-1.333 2H19.333L18 18z"/>
+    </svg>
+    @if($unreadCount > 0)
+        <!-- Red notification dot -->
+        <span class="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 ring-2 ring-white animate-ping"></span>
+        <span class="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500"></span>
+    @endif
+</a>
 
 
 
-
-        <a href="{{ route('profile.show') }}" class="text-white hover:text-[#E95670] transition relative group">
+        <a href="{{ route('profile.show')}}" class="text-white hover:text-[#E95670] transition relative group">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 group-hover:scale-110 transition" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round"

@@ -19,4 +19,10 @@ class Products extends Model
 
 }
 
+   // Define the relationship with the reviews (one-to-many)
+   public function reviews()
+   {
+       return $this->hasMany(Review::class, 'product_id');
+   }
+
 }

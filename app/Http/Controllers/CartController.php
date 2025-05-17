@@ -64,19 +64,21 @@ class CartController extends Controller
         return redirect()->route('cart.index')->with('success', 'Item removed from cart.');
     }
     
-
-
     public function index()
     {
         if (Auth::check()) {
             $matricnum = Auth::user()->matricnum;
-
-            $cartItems = Cart::where('matricnum', $matricnum)->with('product')->get();
+    
+            $cartItems = Cart::where('matricnum', $matricnum)
+                ->with('product')  // Make sure to load the product
+                ->get();
+    
             return view('cart.index', compact('cartItems'));
         }
-
+    
         return redirect()->route('login')->with('error', 'Please log in to view your cart.');
     }
+    
 
     /**
      * Show the product details with cart status

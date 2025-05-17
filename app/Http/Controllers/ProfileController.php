@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Products;
+use App\Models\Booking;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Cart;
+use App\Models\Review;
+use Illuminate\Support\Facades\Log;
 
 
 
@@ -18,9 +21,18 @@ class ProfileController extends Controller
     {
         // Fetch the currently authenticated user with their products
         $user = Auth::user();
-        $user->load(['products' => function ($query) {
+        /*$user->load(['products' => function ($query) {
             $query->where('is_approved', 1);
-        }]);
+        }]);*/
+
+        $user->load([
+            'products' => function ($query) {
+                $query->where('is_approved', 1); // Only approved products
+            },
+            'products.reviews' => function ($query) {
+                $query->with('reviewer'); // Eager load the reviewer (buyer) relationship
+            }
+        ]);
 
         return view('profile.show', compact('user'));
     }
@@ -86,4 +98,53 @@ class ProfileController extends Controller
 
         return view('profile.show', compact('user'));
     }
+
+    public function bookings()
+{
+    // Get all the bookings for the authenticated user
+   // Get all the bookings for the authenticated user
+   $bookings = Booking::where('buyer_matricnum', Auth::user()->matricnum)
+   ->with('product') // Ensure the related products are eager loaded
+   ->get();
+
+   dd($bookings);  // Debug here
+
+
+return view('profile.bookings', compact('bookings'));
+}
+
+public function bookingsForSeller()
+{
+    $sellerMatricnum = Auth::user()->matricnum;
+    $bookings = Booking::where('seller_matricnum', $sellerMatricnum)->with('product', 'buyer')->get();
+
+    return view('profile.seller_bookings', compact('bookings'));
+}
+
+/*public function showProfile($matricnum)
+{
+    $user = User::where('matricnum', $matricnum)->firstOrFail();
+
+    // Eager load products and reviews for the user
+    $user->load([
+        'products' => function ($query) {
+            $query->where('is_approved', 1)->where('stock_status', 'sold');
+        },
+        'products.reviews' => function ($query) {
+            $query->with('reviewer'); // Eager load reviewer (buyer) relationship
+        }
+    ]);
+
+    return view('profile.show', compact('user'));
+}*/
+
+
+
+
+
+
+
+
+
+
 }

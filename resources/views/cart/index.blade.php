@@ -15,12 +15,17 @@
                     <!-- Product Info -->
                     <div class="flex items-center gap-4">
                         <img src="{{ $item->product->image }}" alt="Product Image" class="w-24 h-24 object-cover rounded-md">
-                    <div>
+                        <div>
                             <h2 class="text-lg font-semibold text-gray-800">{{ $item->product->title }}</h2>
                             <p class="text-pink-500 font-bold">RM {{ $item->product->price }}</p>
                             <p class="text-sm text-gray-500">Category: {{ $item->product->category }}</p>
                         </div>
                     </div>
+
+                    <!-- Sold Tag -->
+                    @if($item->product->stock_status === 'sold')
+                        <span class="text-white bg-red-500 px-2 py-1 rounded-full text-xs font-semibold">Sold</span>
+                    @endif
 
                     <!-- Remove from Cart -->
                     <form action="{{ route('cart.remove', ['id' => $item->id, 'slug' => Str::slug($item->product->title)]) }}" method="POST">
@@ -29,7 +34,6 @@
                         <input type="hidden" name="redirect_to" value="cart">
                         <button class="text-red-600 hover:text-red-800 font-medium">Remove</button>
                     </form>
-
                 </div>
             @endforeach
         </div>

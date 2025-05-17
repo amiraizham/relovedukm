@@ -10,6 +10,9 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\NotificationController;
 
 
 
@@ -66,17 +69,34 @@ Route::middleware(['auth'])->group(function () {
     //profile routes
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    // Profile routes
+    //Route::get('/profile/bookings', [ProfileController::class, 'bookings'])->name('profile.bookings');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/products/{product}', [ProductsManager::class, 'show'])->name('products.show');
+
     Route::get('/seller/{matricnum}', [ProfileController::class, 'viewSellerProfile'])->name('seller.profile');
-
-
-
-
 
     // Selling Routes
     Route::get('/sell', [ProductsManager::class, 'showSellForm'])->name('sell'); // Show form
     Route::post('/sell', [ProductsManager::class, 'sellProduct'])->name('sell.post'); // Handle form submission
+
+    Route::post('/booking/request/{product}', [BookingController::class, 'request'])->name('booking.request');
+    Route::get('/bookings/seller', [BookingController::class, 'sellerBookings'])->name('bookings.seller');
+    Route::post('/booking/{id}/approve', [BookingController::class, 'approve'])->name('booking.approve');
+    Route::post('/booking/{id}/reject', [BookingController::class, 'reject'])->name('booking.reject');
+    Route::post('/booking/{id}/confirm', [BookingController::class, 'confirm'])->name('booking.confirm');
+    Route::post('/booking/{bookingId}/mark-sold', [BookingController::class, 'markSold'])->name('booking.markSold');
+    Route::post('/booking/{productId}', [BookingController::class, 'store'])->name('booking.store');
+
+    // Notifications page
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+
+    // Handle booking status updates (accept, reject, confirm)
+    Route::post('/notifications/update/{id}/{status}', [NotificationController::class, 'updateStatus'])->name('notifications.updateStatus');
+
+    // Reviews
+    Route::get('/review/{product}', [ReviewController::class, 'create'])->name('review.create');
+    Route::post('/review/{product}', [ReviewController::class, 'store'])->name('review.store');
 });
 
 // Admin Routes

@@ -71,9 +71,10 @@ class AdminController extends Controller
     public function rejectProduct($id)
     {
         $product = Products::findOrFail($id);
-        $product->delete();
+        $product->is_approved = 0;
+        $product->save();
 
-        return redirect()->back()->with('success', 'Product rejected and removed.');
+        return redirect()->route('admin.dashboard')->with('rejected', 'Product has been rejected.');
     }
 
 
